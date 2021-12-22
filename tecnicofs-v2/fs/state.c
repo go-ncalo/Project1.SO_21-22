@@ -150,6 +150,7 @@ int inode_delete(int inumber) {
 
     freeinode_ts[inumber] = FREE;
 
+    //fazer for para dar free de cada data_block
     if (inode_table[inumber].i_size > 0) {
         if (data_block_free(inode_table[inumber].i_data_block) == -1) {
             return -1;
