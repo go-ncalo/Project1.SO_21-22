@@ -57,8 +57,12 @@ int tfs_open(char const *name, int flags) {
         /* Trucate (if requested) */
         if (flags & TFS_O_TRUNC) {
             if (inode->i_size > 0) {
-                if (data_block_free(inode->i_data_block) == -1) {
-                    return -1;
+                for (int i = 0; i < DIRECT_BLOCKS; i++) {
+                    if (inode->direct_blocks[i] != -1) {
+                        if (data_block_free(inode->direct_blocks[i]) == -1) {
+                            return -1;
+                        }
+                    }
                 }
                 inode->i_size = 0;
             }
@@ -111,8 +115,15 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     }
 
     /* Determine how many bytes to write */
-    if (to_write + file->of_offset > BLOCK_SIZE) {
-        to_write = BLOCK_SIZE - file->of_offset;
+    //if (to_write + file->of_offset > BLOCK_SIZE) {
+        //to_write = BLOCK_SIZE - file->of_offset;
+    //}
+
+    int total_bytes = (int)to_write + file->of_offset;
+
+    int blocks_to_write = (int)to_write / BLOCK_SIZE;
+    if ((int)to_write % BLOCK_SIZE != 0) {
+        blocks_to_write = blocks_to_write + 1;
     }
 
     if (to_write > 0) {
