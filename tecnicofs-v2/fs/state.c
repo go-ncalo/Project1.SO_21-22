@@ -128,8 +128,15 @@ int inode_create(inode_type n_type) {
                 for (int i = 0; i < DIRECT_BLOCKS; i++) {
                     inode_table[inumber].direct_blocks[i] = -1;
                 }
+                inode_table[inumber].indirect_block = data_block_alloc();
+                int *indirect_block;
+                indirect_block=data_block_get(inode_table[inumber].indirect_block);
+                //int indirect_blocks[INDIRECT_BLOCKS];
+                //(int *) data_block_get(inode_table[inumber].indirect_block)=indirect_blocks;
+                for (size_t i = 0; i < INDIRECT_BLOCKS; i++) {
+                    indirect_block[i] = -1;
+                }
             }
-            inode_table[inumber].indirect_block = data_block_alloc();
             return inumber;
         }
     }

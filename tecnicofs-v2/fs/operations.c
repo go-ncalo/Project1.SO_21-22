@@ -119,7 +119,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         //to_write = BLOCK_SIZE - file->of_offset;
     //}
 
-    int total_bytes = (int)to_write + file->of_offset;
+    size_t total_bytes = to_write + file->of_offset;
 
     int blocks_to_write = (int)to_write / BLOCK_SIZE;
 
@@ -127,21 +127,77 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         blocks_to_write++;
     }
 
+    int first_direct_index_free=-1;
+    for (int i=0; i<DIRECT_BLOCKS; i++) {
+        if (inode->direct_blocks[i]==-1) {
+            first_direct_index_free=i;
+            break;
+        }
+    }
+
+    int *indirect_block = data_block_get(inode->indirect_block);
+    int first_indirect_index_free=-1;
+    for (int i=0; i<INDIRECT_BLOCKS; i++) {
+        if (indirect_block[i]==-1) {
+            first_indirect_index_free=i;
+            break;
+        }
+    }
      if (to_write > 0) {
 
-        while (inode->i_size < total_bytes) {
-            for (int i = 0; i < blocks_to_write; i++) {
-                inode->direct_blocks[i] = data_block_alloc();
+        size_t bytes_to_write=to_write;
+        size_t to_write_block=BLOCK_SIZE-(inode->i_size%BLOCK_SIZE);
+        int block_index=-1;
+
+         if (to_write_block) { //if a block is not full
+            if (first_direct_index_free!=-1 && first_direct_index_free<DIRECT_BLOCKS) {
+                block_index=inode->direct_blocks[first_direct_index_free-1];
             }
+            else if (first_indirect_index_free!=-1 && first_direct_index_free==indirect_block[0]) {
+                block_index=inode->direct_blocks[DIRECT_BLOCKS-1];
+            }
+            else if (first_indirect_index_free!=-1 && first_indirect_index_free<INDIRECT_BLOCKS) {
+                block_index=indirect_block[first_indirect_index_free-1];
+            }
+            memcpy(data_block_get(block_index), buffer, to_write_block);
+            buffer+=to_write_block;
+            bytes_to_write-=to_write_block;
+         }
+
+        while (inode->i_size < total_bytes) {
+            if (first_direct_index_free!=-1 && first_direct_index_free<DIRECT_BLOCKS) {
+                inode->direct_blocks[first_direct_index_free] = data_block_alloc();
+                block_index = inode->direct_blocks[first_direct_index_free];
+                first_direct_index_free++;
+            }
+            else if (first_indirect_index_free!=-1 && first_indirect_index_free<INDIRECT_BLOCKS){
+                indirect_block[first_indirect_index_free] = data_block_alloc();
+                block_index = indirect_block[first_indirect_index_free];
+                first_indirect_index_free++;
+            }
+            else {
+                return -1;
+            }
+
+            if (bytes_to_write>BLOCK_SIZE) 
+                to_write_block=BLOCK_SIZE;
+            else
+                to_write_block=bytes_to_write;
+
+
+            memcpy(data_block_get(block_index), buffer, to_write_block);
+            buffer+=to_write_block;
+            inode->i_size+=BLOCK_SIZE;
+            bytes_to_write-=to_write_block;
         }
 
-        void *block = data_block_get(inode->i_data_block);
-        if (block == NULL) {
-            return -1;
-        }
+        //void *block = data_block_get(inode->i_data_block);
+        //if (block == NULL) {
+            //return -1;
+        //}
 
         /* Perform the actual write */
-        memcpy(block + file->of_offset, buffer, to_write);
+        //memcpy(block + file->of_offset, buffer, to_write);
 
         /* The offset associated with the file handle is
          * incremented accordingly */
@@ -155,19 +211,19 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
 }
 
 
-ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
+/*ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     open_file_entry_t *file = get_open_file_entry(fhandle);
     if (file == NULL) {
         return -1;
     }
 
-    /* From the open file table entry, we get the inode */
+     From the open file table entry, we get the inode 
     inode_t *inode = inode_get(file->of_inumber);
     if (inode == NULL) {
         return -1;
     }
 
-    /* Determine how many bytes to read */
+     Determine how many bytes to read 
     size_t to_read = inode->i_size - file->of_offset;
     if (to_read > len) {
         to_read = len;
@@ -179,15 +235,15 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
             return -1;
         }
 
-        /* Perform the actual read */
+         Perform the actual read 
         memcpy(buffer, block + file->of_offset, to_read);
-        /* The offset associated with the file handle is
-         * incremented accordingly */
+         The offset associated with the file handle is
+         * incremented accordingly 
         file->of_offset += to_read;
     }
 
     return (ssize_t)to_read;
-}
+} 
 
 int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     FILE *dest_pt;
@@ -208,4 +264,4 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     tfs_close(fhandle_source);
     fclose(dest_pt);
     return 0;
-}
+} */
