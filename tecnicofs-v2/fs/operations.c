@@ -115,11 +115,6 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         return -1;
     }
 
-    /* Determine how many bytes to write */
-    //if (to_write + file->of_offset > BLOCK_SIZE) {
-        //to_write = BLOCK_SIZE - file->of_offset;
-    //}
-
     if (to_write > 0) {
         int blocks_to_write = (int) to_write / BLOCK_SIZE;
         int offset_block = (int) file->of_offset / BLOCK_SIZE;
@@ -127,8 +122,10 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         if ((int)to_write % BLOCK_SIZE != 0) {
             blocks_to_write++;
         }
-        if (file->of_offset % BLOCK_SIZE != 0) {
-            offset_block++;
+        if (file->of_offset > BLOCK_SIZE) {
+            if (file->of_offset % BLOCK_SIZE != 0) {
+                offset_block++;
+            }
         }
 
         int *indirect_block = data_block_get(inode->indirect_block); 
@@ -136,7 +133,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             return -1;
         }
 
-        for (int i = offset_block - 1; i < offset_block + blocks_to_write; i++) {
+        for (int i = offset_block; i < offset_block + blocks_to_write; i++) {
             void *block;
             size_t offset = file->of_offset % BLOCK_SIZE;
             if (i < DIRECT_BLOCKS) {
@@ -157,7 +154,11 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
                 }
             }
             if (offset != 0) {
-                bytes_to_write = BLOCK_SIZE - offset;
+                if (to_write > BLOCK_SIZE - offset) {
+                    bytes_to_write = BLOCK_SIZE - offset;
+                } else {
+                    bytes_to_write = to_write;
+                }
             } else if (to_write > BLOCK_SIZE) {
                 bytes_to_write = BLOCK_SIZE;
             } else {
@@ -167,10 +168,12 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             file->of_offset += bytes_to_write;
             to_write -= bytes_to_write;
             bytes_written += bytes_to_write;
-            buffer += bytes_to_write;
+        }
+
+        if (file->of_offset > inode->i_size) {
+            inode->i_size = file->of_offset;
         }
     } 
-    printf("%ld", bytes_written);
     return (ssize_t)bytes_written;
 }
 
@@ -198,10 +201,13 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
         int block_to_read = (int) to_read / BLOCK_SIZE;
         int offset_block = (int) file->of_offset / BLOCK_SIZE;
 
-        if (file->of_offset % BLOCK_SIZE != 0) {
-            offset_block++;
+        if (file->of_offset > BLOCK_SIZE) {
+            if (file->of_offset % BLOCK_SIZE != 0) {
+                offset_block++;
+            }
         }
-        if (to_read % BLOCK_SIZE != 0) {
+
+        if ((int)to_read % BLOCK_SIZE != 0) {
             block_to_read++;
         }
 
@@ -210,7 +216,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
             return -1;
         }
 
-        for (int i = offset_block - 1; i < offset_block + block_to_read; i++) {
+        for (int i = offset_block; i < offset_block + block_to_read; i++) {
             void *block;
             size_t offset = file->of_offset % BLOCK_SIZE;
             if (i < DIRECT_BLOCKS) {
@@ -225,17 +231,20 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
                 }
             }
             if (offset != 0) {
+                if (to_read > BLOCK_SIZE - offset) {
                     bytes_to_read = BLOCK_SIZE - offset;
-                } else if (to_read > BLOCK_SIZE) {
-                    bytes_to_read = BLOCK_SIZE;
                 } else {
                     bytes_to_read = to_read;
                 }
-                memcpy(buffer, block + offset, bytes_to_read);
-                file->of_offset += bytes_to_read;
-                to_read -= bytes_to_read;
-                bytes_read += bytes_to_read;
-                buffer += bytes_to_read;
+            } else if (to_read > BLOCK_SIZE) {
+                bytes_to_read = BLOCK_SIZE;
+            } else {
+                bytes_to_read = to_read;
+            }
+            memcpy(buffer, block + offset, bytes_to_read);
+            file->of_offset += bytes_to_read;
+            to_read -= bytes_to_read;
+            bytes_read += bytes_to_read;
         }
     }
 
