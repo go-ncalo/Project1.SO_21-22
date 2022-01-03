@@ -122,6 +122,8 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         if ((int)to_write % BLOCK_SIZE != 0) {
             blocks_to_write++;
         }
+        //printf("blocos para escrever:%d\n",blocks_to_write);
+
         if (file->of_offset > BLOCK_SIZE) {
             if (file->of_offset % BLOCK_SIZE != 0) {
                 offset_block++;
@@ -133,7 +135,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             return -1;
         }
 
-        for (int i = offset_block; i < offset_block + blocks_to_write; i++) {
+        for (int i = offset_block; i <= offset_block + blocks_to_write; i++) {
             void *block;
             size_t offset = file->of_offset % BLOCK_SIZE;
             if (i < DIRECT_BLOCKS) {
@@ -164,6 +166,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             } else {
                 bytes_to_write = to_write;
             }
+            //printf("%ld\n", bytes_to_write);
             memcpy(block + offset, buffer, bytes_to_write);
             file->of_offset += bytes_to_write;
             to_write -= bytes_to_write;
@@ -216,7 +219,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
             return -1;
         }
 
-        for (int i = offset_block; i < offset_block + block_to_read; i++) {
+        for (int i = offset_block; i <= offset_block + block_to_read; i++) {
             void *block;
             size_t offset = file->of_offset % BLOCK_SIZE;
             if (i < DIRECT_BLOCKS) {
