@@ -122,7 +122,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         if ((int)to_write % BLOCK_SIZE != 0) {
             blocks_to_write++;
         }
-        //printf("blocos para escrever:%d\n",blocks_to_write);
+
 
         if (file->of_offset > BLOCK_SIZE) {
             if (file->of_offset % BLOCK_SIZE != 0) {
@@ -130,10 +130,18 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             }
         }
 
-        int *indirect_block = data_block_get(inode->indirect_block); 
-        if (indirect_block == NULL) {
-            return -1;
+        if (offset_block + blocks_to_write>=DIRECT_BLOCKS && inode->indirect_block==-1) {
+            inode->indirect_block = data_block_alloc();
+            int *indirect_block=data_block_get(inode->indirect_block);
+            for (size_t i = 0; i < INDIRECT_BLOCKS; i++) {
+                indirect_block[i] = -1;
+            }
         }
+
+        int *indirect_block=NULL;
+
+        if (offset_block + blocks_to_write>=DIRECT_BLOCKS) 
+            indirect_block = data_block_get(inode->indirect_block); 
 
         for (int i = offset_block; i <= offset_block + blocks_to_write; i++) {
             void *block;
@@ -214,10 +222,10 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
             block_to_read++;
         }
 
-        int *indirect_block = data_block_get(inode->indirect_block); 
-        if (indirect_block == NULL) {
-            return -1;
-        }
+        int *indirect_block=NULL;
+
+        if (offset_block + block_to_read>=DIRECT_BLOCKS) 
+            indirect_block = data_block_get(inode->indirect_block); 
 
         for (int i = offset_block; i <= offset_block + block_to_read; i++) {
             void *block;
