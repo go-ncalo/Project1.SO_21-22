@@ -272,9 +272,16 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     FILE *dest_pt;
     int source_inumber=tfs_lookup(source_path);
     dest_pt=fopen(dest_path,"w");
-    if (source_inumber==-1 || dest_pt==NULL) {
+
+    if (source_inumber==-1){
+        fclose(dest_pt);
         return -1;
     }
+
+    if (dest_pt==NULL) {
+        return -1;
+    }
+    
     char *buffer = malloc(BLOCK_SIZE*DATA_BLOCKS);
     int fhandle_source=tfs_open(source_path,0);
     ssize_t n_bytes=tfs_read(fhandle_source, buffer, BLOCK_SIZE*DATA_BLOCKS);
@@ -282,7 +289,7 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
         free(buffer);
         return -1;
     }
-    
+
     fwrite(buffer,1,(size_t)n_bytes,dest_pt);
 
     free(buffer);
