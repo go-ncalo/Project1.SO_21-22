@@ -10,17 +10,17 @@
  * memory; for simplicity, this project maintains it in primary memory) */
 
 /* I-node table */
-static inode_t inode_table[INODE_TABLE_SIZE];
-static char freeinode_ts[INODE_TABLE_SIZE];
+static inode_t inode_table[INODE_TABLE_SIZE]; //proteger com locks
+static char freeinode_ts[INODE_TABLE_SIZE]; //proteger com locks
 
 /* Data blocks */
-static char fs_data[BLOCK_SIZE * DATA_BLOCKS];
-static char free_blocks[DATA_BLOCKS];
+static char fs_data[BLOCK_SIZE * DATA_BLOCKS]; //proteger com locks
+static char free_blocks[DATA_BLOCKS]; //proteger com locks
 
 /* Volatile FS state */
 
-static open_file_entry_t open_file_table[MAX_OPEN_FILES];
-static char free_open_file_entries[MAX_OPEN_FILES];
+static open_file_entry_t open_file_table[MAX_OPEN_FILES]; //proteger com locks
+static char free_open_file_entries[MAX_OPEN_FILES]; //proteger com locks
 
 static inline bool valid_inumber(int inumber) {
     return inumber >= 0 && inumber < INODE_TABLE_SIZE;
@@ -78,6 +78,7 @@ void state_init() {
     }
 }
 
+//destroy dos mutex
 void state_destroy() { /* nothing to do */
 }
 
@@ -162,6 +163,14 @@ int inode_delete(int inumber) {
             }
         }
         if (inode_table[inumber].indirect_block!=-1) {
+            int* indirect_block = data_block_get(inode_table[inumber].indirect_block); 
+            for (int i = 0; i < INDIRECT_BLOCKS; i++) {
+                if (indirect_block[i] != -1) {
+                    if (indirect_block[i] == -1) {
+                        return -1;
+                    }
+                }
+            }
             if (data_block_free(inode_table[inumber].indirect_block) == -1) {
                 return -1;
             }

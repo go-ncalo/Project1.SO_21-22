@@ -25,6 +25,7 @@ typedef struct {
     size_t i_size;
     int direct_blocks[DIRECT_BLOCKS];
     int indirect_block;
+    //mutex
     /* in a real FS, more fields would exist here */
 } inode_t;
 

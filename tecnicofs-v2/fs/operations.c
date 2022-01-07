@@ -37,6 +37,7 @@ int tfs_lookup(char const *name) {
     return find_in_dir(ROOT_DIR_INUM, name);
 }
 
+//lock 
 int tfs_open(char const *name, int flags) {
     int inum;
     size_t offset;
@@ -53,6 +54,8 @@ int tfs_open(char const *name, int flags) {
         if (inode == NULL) {
             return -1;
         }
+
+        //lock no inode
 
         /* Trucate (if requested) */
         if (flags & TFS_O_TRUNC) {
@@ -81,6 +84,7 @@ int tfs_open(char const *name, int flags) {
             return -1;
         }
         /* Add entry in the root directory */
+        //lock no inode da root
         if (add_dir_entry(ROOT_DIR_INUM, inum, name + 1) == -1) {
             inode_delete(inum);
             return -1;
@@ -99,9 +103,10 @@ int tfs_open(char const *name, int flags) {
      * opened but it remains created */
 }
 
-
+//lock do inode
 int tfs_close(int fhandle) { return remove_from_open_file_table(fhandle); }
 
+//proteger com lock no inode
 ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     size_t bytes_to_write, bytes_written = 0;
     open_file_entry_t *file = get_open_file_entry(fhandle);
@@ -188,7 +193,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     return (ssize_t)bytes_written;
 }
 
-
+//proteger com lock no inode
 ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     size_t bytes_to_read, bytes_read = 0;
     open_file_entry_t *file = get_open_file_entry(fhandle);
@@ -262,6 +267,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     return (ssize_t)bytes_read;
 } 
 
+//colocar locks tamb
 int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     FILE *dest_pt;
     int source_inumber=tfs_lookup(source_path);
@@ -273,8 +279,10 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     int fhandle_source=tfs_open(source_path,0);
     ssize_t n_bytes=tfs_read(fhandle_source, buffer, BLOCK_SIZE*DATA_BLOCKS);
     if (n_bytes == -1) {
+        free(buffer);
         return -1;
     }
+    
     fwrite(buffer,1,(size_t)n_bytes,dest_pt);
 
     free(buffer);
