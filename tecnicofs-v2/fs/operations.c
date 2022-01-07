@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 int tfs_init() {
     state_init();
@@ -55,7 +56,7 @@ int tfs_open(char const *name, int flags) {
             return -1;
         }
 
-        //lock no inode
+        pthread_rwlock_wrlock(&inode->rwlock);
 
         /* Trucate (if requested) */
         if (flags & TFS_O_TRUNC) {
@@ -63,6 +64,7 @@ int tfs_open(char const *name, int flags) {
                 for (int i = 0; i < DIRECT_BLOCKS; i++) {
                     if (inode->direct_blocks[i] != -1) {
                         if (data_block_free(inode->direct_blocks[i]) == -1) {
+                            pthread_rwlock_unlock(&inode->rwlock);
                             return -1;
                         }
                     }
@@ -76,6 +78,9 @@ int tfs_open(char const *name, int flags) {
         } else {
             offset = 0;
         }
+
+        pthread_rwlock_unlock(&inode->rwlock);
+
     } else if (flags & TFS_O_CREAT) {
         /* The file doesn't exist; the flags specify that it should be created*/
         /* Create inode */
@@ -84,11 +89,13 @@ int tfs_open(char const *name, int flags) {
             return -1;
         }
         /* Add entry in the root directory */
-        //lock no inode da root
+        pthread_rwlock_wrlock(&inode_get(ROOT_DIR_INUM)->rwlock);
         if (add_dir_entry(ROOT_DIR_INUM, inum, name + 1) == -1) {
+            pthread_rwlock_unlock(&inode_get(ROOT_DIR_INUM)->rwlock);
             inode_delete(inum);
             return -1;
         }
+        pthread_rwlock_unlock(&inode_get(ROOT_DIR_INUM)->rwlock);
         offset = 0;
     } else {
         return -1;
@@ -104,7 +111,14 @@ int tfs_open(char const *name, int flags) {
 }
 
 //lock do inode
-int tfs_close(int fhandle) { return remove_from_open_file_table(fhandle); }
+int tfs_close(int fhandle) {
+    open_file_entry_t *file = get_open_file_entry(fhandle);
+    inode_t *inode = inode_get(file->of_inumber);
+    pthread_rwlock_wrlock(&inode->rwlock);
+    int return_value = remove_from_open_file_table(fhandle); 
+    pthread_rwlock_unlock(&inode->rwlock);
+    return return_value;
+    }
 
 //proteger com lock no inode
 ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
@@ -119,6 +133,8 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     if (inode == NULL) {
         return -1;
     }
+
+    pthread_rwlock_wrlock(&inode->rwlock);
 
     if (to_write > 0) {
         int blocks_to_write = (int) to_write / BLOCK_SIZE;
@@ -190,6 +206,8 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             inode->i_size = file->of_offset;
         }
     } 
+
+    pthread_rwlock_unlock(&inode->rwlock);
     return (ssize_t)bytes_written;
 }
 
@@ -206,6 +224,8 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     if (inode == NULL) {
         return -1;
     }
+
+    pthread_rwlock_rdlock(&inode->rwlock);
 
      /* Determine how many bytes to read */
     size_t to_read = inode->i_size - file->of_offset;
@@ -264,10 +284,11 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
         }
     }
 
+    pthread_rwlock_unlock(&inode->rwlock);
     return (ssize_t)bytes_read;
 } 
 
-//colocar locks tamb
+//perguntar segunda
 int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     FILE *dest_pt;
     int source_inumber=tfs_lookup(source_path);
@@ -281,7 +302,7 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     if (dest_pt==NULL) {
         return -1;
     }
-    
+
     char *buffer = malloc(BLOCK_SIZE*DATA_BLOCKS);
     int fhandle_source=tfs_open(source_path,0);
     ssize_t n_bytes=tfs_read(fhandle_source, buffer, BLOCK_SIZE*DATA_BLOCKS);

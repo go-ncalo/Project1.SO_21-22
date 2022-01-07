@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include "state.h"
+#include <pthread.h>
 #include <sys/types.h>
 
 enum {
