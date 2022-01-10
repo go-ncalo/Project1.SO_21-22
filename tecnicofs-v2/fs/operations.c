@@ -57,7 +57,6 @@ int tfs_open(char const *name, int flags) {
         }
 
         pthread_rwlock_wrlock(&inode->rwlock);
-
         /* Trucate (if requested) */
         if (flags & TFS_O_TRUNC) {
             if (inode->i_size > 0) {

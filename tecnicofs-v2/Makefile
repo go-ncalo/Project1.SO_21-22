@@ -21,13 +21,18 @@ TARGET_EXECS := tests/test1 tests/copy_to_external_simple tests/copy_to_external
 vpath # clears VPATH
 vpath %.h $(INCLUDE_DIRS)
 
-CFLAGS = -std=c11 -D_POSIX_C_SOURCE=200809L
+CFLAGS = -std=c11 -D_POSIX_C_SOURCE=200809L 
 CFLAGS += $(INCLUDES)
 
 # Warnings
-CFLAGS += -fdiagnostics-color=always -Wall -Werror -Wextra -Wcast-align -Wconversion -Wfloat-equal -Wformat=2 -Wnull-dereference -Wshadow -Wsign-conversion -Wswitch-default -Wswitch-enum -Wundef -Wunreachable-code -Wunused
+CFLAGS += -fdiagnostics-color=always -Wall -Werror -Wextra -Wcast-align -Wconversion -Wfloat-equal -Wformat=2 -Wnull-dereference -Wshadow -Wsign-conversion -Wswitch-default -Wswitch-enum -Wundef -Wunreachable-code -Wunused 
 # Warning suppressions
 CFLAGS += -Wno-sign-compare
+
+LDFLAGS += -pthread
+
+CFLAGS+=-fsanitize=thread
+LDFLAGS+=-fsanitize=thread
 
 # optional debug symbols: run make DEBUG=no to deactivate them
 ifneq ($(strip $(DEBUG)), no)
