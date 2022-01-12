@@ -376,6 +376,7 @@ int add_to_open_file_table(int inumber, size_t offset) {
             free_open_file_entries.table[i] = TAKEN;
             open_file_table.table[i].of_inumber = inumber;
             open_file_table.table[i].of_offset = offset;
+            pthread_mutex_init(&open_file_table.table[i].mutex,NULL);
             pthread_mutex_unlock(&open_file_table.mutex);
             pthread_mutex_unlock(&free_open_file_entries.mutex);
             return i;
@@ -399,6 +400,7 @@ int remove_from_open_file_table(int fhandle) {
         return -1;
     }
     free_open_file_entries.table[fhandle] = FREE;
+    //pthread_mutex_destroy(&open_file_table[])
     pthread_mutex_unlock(&free_open_file_entries.mutex);
     return 0;
 }

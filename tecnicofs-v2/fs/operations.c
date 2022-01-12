@@ -56,9 +56,9 @@ int tfs_open(char const *name, int flags) {
             return -1;
         }
 
-        pthread_rwlock_wrlock(&inode->rwlock);
         /* Trucate (if requested) */
         if (flags & TFS_O_TRUNC) {
+            pthread_rwlock_rdlock(&inode->rwlock);
             if (inode->i_size > 0) {
                 for (int i = 0; i < DIRECT_BLOCKS; i++) {
                     if (inode->direct_blocks[i] != -1) {
@@ -70,15 +70,17 @@ int tfs_open(char const *name, int flags) {
                 }
                 inode->i_size = 0;
             }
+            pthread_rwlock_unlock(&inode->rwlock);
         }
+
         /* Determine initial offset */
         if (flags & TFS_O_APPEND) {
+            pthread_rwlock_rdlock(&inode->rwlock);
             offset = inode->i_size;
+            pthread_rwlock_unlock(&inode->rwlock);
         } else {
             offset = 0;
         }
-
-        pthread_rwlock_unlock(&inode->rwlock);
 
     } else if (flags & TFS_O_CREAT) {
         /* The file doesn't exist; the flags specify that it should be created*/
@@ -133,10 +135,11 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         return -1;
     }
 
-    pthread_rwlock_wrlock(&inode->rwlock);
 
     if (to_write > 0) {
         int blocks_to_write = (int) to_write / BLOCK_SIZE;
+
+        
         int offset_block = (int) file->of_offset / BLOCK_SIZE;
 
         if ((int)to_write % BLOCK_SIZE != 0) {

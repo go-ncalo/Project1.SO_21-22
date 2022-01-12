@@ -69,6 +69,7 @@ typedef struct {
 typedef struct {
     int of_inumber;
     size_t of_offset;
+    pthread_mutex_t mutex;
 } open_file_entry_t;
 
 typedef struct {
