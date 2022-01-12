@@ -68,6 +68,21 @@ int tfs_open(char const *name, int flags) {
                         }
                     }
                 }
+                if (inode->indirect_block!=-1) {
+                    int* indirect_block = data_block_get(inode->indirect_block); 
+                    for (int i = 0; i < INDIRECT_BLOCKS; i++) {
+                        if (indirect_block[i] != -1) {
+                            if (data_block_free(indirect_block[i]) == -1) {
+                                pthread_rwlock_unlock(&inode->rwlock);
+                                return -1;
+                            }
+                        }
+                    }
+                    if (data_block_free(inode->indirect_block) == -1) {
+                        pthread_rwlock_unlock(&inode->rwlock);
+                        return -1;
+                    }
+                }
                 inode->i_size = 0;
             }
             pthread_rwlock_unlock(&inode->rwlock);
@@ -111,7 +126,7 @@ int tfs_open(char const *name, int flags) {
      * opened but it remains created */
 }
 
-//lock do inode
+//lock do open file entry
 int tfs_close(int fhandle) {
     open_file_entry_t *file = get_open_file_entry(fhandle);
     inode_t *inode = inode_get(file->of_inumber);
