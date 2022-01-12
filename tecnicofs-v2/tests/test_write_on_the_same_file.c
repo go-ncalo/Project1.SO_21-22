@@ -7,9 +7,10 @@
 #define SIZE 256
 
 /**
-   This test fills in a new file up to 10 blocks via multiple writes, 
-   each write always targeting only 1 block of the file, 
-   then checks if the file contents are as expected
+   This test runs three threads. In one of them it creates a new
+   file and writes 10 blocks, one block at a time. In the other it
+   opens the file just written and writes 10 more blocks. And the
+   final thread reads everything that was written.
  */
 
 void* read (void* args);
