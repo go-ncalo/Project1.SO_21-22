@@ -119,6 +119,7 @@ int tfs_open(char const *name, int flags) {
 
     /* Finally, add entry to the open file table and
      * return the corresponding handle */
+    //printf("%ld\n", offset);
     return add_to_open_file_table(inum, offset);
 
     /* Note: for simplification, if file was created with TFS_O_CREAT and there
