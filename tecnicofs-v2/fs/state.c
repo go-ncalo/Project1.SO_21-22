@@ -400,7 +400,7 @@ int remove_from_open_file_table(int fhandle) {
         return -1;
     }
     free_open_file_entries.table[fhandle] = FREE;
-    //pthread_mutex_destroy(&open_file_table[])
+    pthread_mutex_destroy(&open_file_table.table[fhandle].mutex);
     pthread_mutex_unlock(&free_open_file_entries.mutex);
     return 0;
 }
