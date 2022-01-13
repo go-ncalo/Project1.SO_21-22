@@ -33,9 +33,9 @@ int main() {
 
     assert(pthread_create(&write1,NULL, &write, &args) == 0);
     assert(pthread_create(&write2,NULL, &write_same_file, &args) == 0);
-    assert(pthread_create(&read1,NULL, &read, &args) == 0);
     assert(pthread_join(write1, NULL) == 0);
     assert(pthread_join(write2, NULL) == 0);
+    assert(pthread_create(&read1,NULL, &read, &args) == 0);
     assert(pthread_join(read1, NULL) == 0);
     
 
@@ -45,7 +45,6 @@ int main() {
 }
 
 void* read (void* args) {
-
     char output [SIZE];
 
     int fd = tfs_open(((args_struct*)args)->path, 0);

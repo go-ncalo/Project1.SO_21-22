@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <errno.h>
+#define _OPEN_THREADS
 
 int tfs_init() {
     state_init();
@@ -48,7 +50,10 @@ int tfs_open(char const *name, int flags) {
         return -1;
     }
 
+
     inum = tfs_lookup(name);
+
+
     if (inum >= 0) {
         /* The file already exists */
         inode_t *inode = inode_get(inum);
@@ -88,6 +93,10 @@ int tfs_open(char const *name, int flags) {
             pthread_rwlock_unlock(&inode->rwlock);
         }
 
+        //pthread_rwlock_wrlock(&inode_get(ROOT_DIR_INUM)->rwlock);
+
+        
+
         /* Determine initial offset */
         if (flags & TFS_O_APPEND) {
             pthread_rwlock_rdlock(&inode->rwlock);
@@ -100,26 +109,31 @@ int tfs_open(char const *name, int flags) {
     } else if (flags & TFS_O_CREAT) {
         /* The file doesn't exist; the flags specify that it should be created*/
         /* Create inode */
+
         inum = inode_create(T_FILE);
         if (inum == -1) {
             return -1;
         }
         /* Add entry in the root directory */
+    
         pthread_rwlock_wrlock(&inode_get(ROOT_DIR_INUM)->rwlock);
+
         if (add_dir_entry(ROOT_DIR_INUM, inum, name + 1) == -1) {
             pthread_rwlock_unlock(&inode_get(ROOT_DIR_INUM)->rwlock);
             inode_delete(inum);
             return -1;
         }
         pthread_rwlock_unlock(&inode_get(ROOT_DIR_INUM)->rwlock);
+
         offset = 0;
+
     } else {
         return -1;
     }
 
     /* Finally, add entry to the open file table and
-     * return the corresponding handle */
-    //printf("%ld\n", offset);
+     * return the corresponding handle */                                   
+
     return add_to_open_file_table(inum, offset);
 
     /* Note: for simplification, if file was created with TFS_O_CREAT and there
@@ -329,12 +343,11 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     return (ssize_t)bytes_read;
 } 
 
-//perguntar segunda
+
 int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     FILE *dest_pt;
     int source_inumber=tfs_lookup(source_path);
     dest_pt=fopen(dest_path,"w");
-
     if (source_inumber==-1){
         fclose(dest_pt);
         return -1;
@@ -343,7 +356,6 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     if (dest_pt==NULL) {
         return -1;
     }
-
     char *buffer = malloc(BLOCK_SIZE*DATA_BLOCKS);
     int fhandle_source=tfs_open(source_path,0);
     ssize_t n_bytes=tfs_read(fhandle_source, buffer, BLOCK_SIZE*DATA_BLOCKS);

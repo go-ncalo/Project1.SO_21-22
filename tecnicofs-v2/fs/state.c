@@ -251,14 +251,14 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
 
     insert_delay(); // simulate storage access delay to i-node with inumber
 
-    pthread_rwlock_wrlock(&inode_table.table[inumber].rwlock);
+    //pthread_rwlock_wrlock(&inode_table.table[inumber].rwlock);
     if (inode_table.table[inumber].i_node_type != T_DIRECTORY) {
-        pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
+        //pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
         return -1;
     }
 
     if (strlen(sub_name) == 0) {
-        pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
+        //pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
         return -1;
     }
 
@@ -266,7 +266,7 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
     dir_entry_t *dir_entry =
         (dir_entry_t *)data_block_get(inode_table.table[inumber].direct_blocks[0]);
     if (dir_entry == NULL) {
-        pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
+        //pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
         return -1;
     }
 
@@ -276,12 +276,13 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
             dir_entry[i].d_inumber = sub_inumber;
             strncpy(dir_entry[i].d_name, sub_name, MAX_FILE_NAME - 1);
             dir_entry[i].d_name[MAX_FILE_NAME - 1] = 0;
-            pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
+            //pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
+            
             return 0;
         }
     }
 
-    pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
+    //pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
     return -1;
 }
 
@@ -293,14 +294,13 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
  */
 int find_in_dir(int inumber, char const *sub_name) {
     insert_delay(); // simulate storage access delay to i-node with inumber
-
+    
     pthread_rwlock_rdlock(&inode_table.table[inumber].rwlock);
     if (!valid_inumber(inumber) ||
         inode_table.table[inumber].i_node_type != T_DIRECTORY) {
             pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
             return -1;
     }
-
     /* Locates the block containing the directory's entries */
     dir_entry_t *dir_entry =
         (dir_entry_t *)data_block_get(inode_table.table[inumber].direct_blocks[0]);
@@ -318,7 +318,6 @@ int find_in_dir(int inumber, char const *sub_name) {
             (strncmp(dir_entry[i].d_name, sub_name, MAX_FILE_NAME) == 0)) {
             return dir_entry[i].d_inumber;
         }
-
     return -1;
 }
 
