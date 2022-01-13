@@ -7,10 +7,9 @@
 #define SIZE 256
 
 /**
-   This test runs three threads. In one of them it creates a new
-   file and writes 10 blocks, one block at a time. In the other it
-   opens the file just written and writes 10 more blocks. And the
-   final thread reads everything that was written.
+   This tests writes on the same file 20 blocks of
+   data, twice. And then it has 4 threads that reads
+   everything that was written.
  */
 
 void* read (void* args);
@@ -46,7 +45,7 @@ int main() {
     assert(pthread_join(read4, NULL) == 0);
     
 
-    printf("Sucessful test\n");
+    printf("Successful test\n");
 
     return 0;
 }

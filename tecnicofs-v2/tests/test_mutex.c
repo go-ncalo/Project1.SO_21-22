@@ -6,9 +6,8 @@
 #define SIZE 256
 
 /**
-   This test fills in a new file up to 10 blocks via multiple writes, 
-   each write always targeting only 1 block of the file, 
-   then checks if the file contents are as expected
+   This test writes twice to the same file
+   and reads it twice from the same file.
  */
 
 void* read (void* args);

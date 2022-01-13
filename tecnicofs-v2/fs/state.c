@@ -66,6 +66,7 @@ static void insert_delay() {
  * Initializes FS state
  */
 void state_init() {
+    // Initializes the mutexes
     pthread_mutex_init(&freeinode_ts.mutex, NULL);
     pthread_mutex_init(&free_blocks.mutex, NULL);
     pthread_mutex_init(&free_open_file_entries.mutex, NULL);
@@ -86,8 +87,8 @@ void state_init() {
     }
 }
 
-//destroy dos mutex
-void state_destroy() { /* nothing to do */
+void state_destroy() { 
+    // destroys the mutexes
     pthread_mutex_destroy(&inode_table.mutex);
     pthread_mutex_destroy(&freeinode_ts.mutex);
     pthread_mutex_destroy(&fs_data.mutex);
@@ -132,6 +133,7 @@ int inode_create(inode_type n_type) {
                 }
 
                 inode_table.table[inumber].i_size = BLOCK_SIZE;
+                // The root directory has only one block
                 inode_table.table[inumber].direct_blocks[0] = b;
 
                 pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
@@ -154,9 +156,11 @@ int inode_create(inode_type n_type) {
 
                 /* In case of a new file, simply sets its size to 0 */
                 inode_table.table[inumber].i_size = 0;
+                // DIRECT BLOCKS
                 for (int i = 0; i < DIRECT_BLOCKS; i++) {
                     inode_table.table[inumber].direct_blocks[i] = -1;
                 }
+                // INDIRECT BLOCK
                 inode_table.table[inumber].indirect_block = -1;
 
                 pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
@@ -191,6 +195,7 @@ int inode_delete(int inumber) {
 
     pthread_rwlock_wrlock(&inode_table.table[inumber].rwlock);
     if (inode_table.table[inumber].i_size > 0) {
+        // DIRECT BLOCKS
         for (int i = 0; i < DIRECT_BLOCKS; i++) {
             if (inode_table.table[inumber].direct_blocks[i] != -1) {
                 if (data_block_free(inode_table.table[inumber].direct_blocks[i]) == -1) {
@@ -199,6 +204,7 @@ int inode_delete(int inumber) {
                 }
             }
         }
+        // INDIRECT BLOCKS
         if (inode_table.table[inumber].indirect_block!=-1) {
             int* indirect_block = data_block_get(inode_table.table[inumber].indirect_block); 
             for (int i = 0; i < INDIRECT_BLOCKS; i++) {
@@ -251,14 +257,11 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
 
     insert_delay(); // simulate storage access delay to i-node with inumber
 
-    //pthread_rwlock_wrlock(&inode_table.table[inumber].rwlock);
     if (inode_table.table[inumber].i_node_type != T_DIRECTORY) {
-        //pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
         return -1;
     }
 
     if (strlen(sub_name) == 0) {
-        //pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
         return -1;
     }
 
@@ -266,7 +269,6 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
     dir_entry_t *dir_entry =
         (dir_entry_t *)data_block_get(inode_table.table[inumber].direct_blocks[0]);
     if (dir_entry == NULL) {
-        //pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
         return -1;
     }
 
@@ -276,13 +278,10 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
             dir_entry[i].d_inumber = sub_inumber;
             strncpy(dir_entry[i].d_name, sub_name, MAX_FILE_NAME - 1);
             dir_entry[i].d_name[MAX_FILE_NAME - 1] = 0;
-            //pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
             
             return 0;
         }
     }
-
-    //pthread_rwlock_unlock(&inode_table.table[inumber].rwlock);
     return -1;
 }
 

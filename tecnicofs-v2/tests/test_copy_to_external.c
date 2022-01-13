@@ -7,6 +7,12 @@
 #define DOUBLECOUNT 80
 #define SIZE 256
 
+/**
+   This test performs the copy_to_external from two
+   different files of tecnicofs to two different
+   external files.
+ */
+
 typedef struct {
     char *path_o;
     char *path_d;
