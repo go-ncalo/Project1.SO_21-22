@@ -2,8 +2,8 @@
 #include <assert.h>
 #include <string.h>
 
-#define COUNT 40
-#define DOUBLECOUNT 80
+#define COUNT 80
+#define DOUBLECOUNT 160
 #define SIZE 256
 
 /**
@@ -29,14 +29,21 @@ int main() {
     memset(args.input, 'A', SIZE);
 
     assert(tfs_init() != -1);
-    pthread_t write1, write2, read1;
+    pthread_t write1, write2, read1, read2, read3, read4;
+
 
     assert(pthread_create(&write1,NULL, &write, &args) == 0);
-    assert(pthread_create(&write2,NULL, &write_same_file, &args) == 0);
     assert(pthread_join(write1, NULL) == 0);
+    assert(pthread_create(&write2,NULL, &write_same_file, &args) == 0);
     assert(pthread_join(write2, NULL) == 0);
     assert(pthread_create(&read1,NULL, &read, &args) == 0);
+    assert(pthread_create(&read2,NULL, &read, &args) == 0);
+    assert(pthread_create(&read3,NULL, &read, &args) == 0);
+    assert(pthread_create(&read4,NULL, &read, &args) == 0);
     assert(pthread_join(read1, NULL) == 0);
+    assert(pthread_join(read2, NULL) == 0);
+    assert(pthread_join(read3, NULL) == 0);
+    assert(pthread_join(read4, NULL) == 0);
     
 
     printf("Sucessful test\n");
