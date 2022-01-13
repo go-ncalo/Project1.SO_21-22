@@ -87,9 +87,7 @@ void* copy_to_external (void* args) {
     FILE *fp = fopen(((args_struct*) args)->path_d, "r");
 
     assert(fp != NULL);
-
     assert(fread(to_read, sizeof(char), strlen(((args_struct*) args)->str), fp) == strlen(((args_struct*) args)->str));
- 
     assert(strcmp((((args_struct*) args)->str), to_read) == 0);
   
     assert(fclose(fp) != -1);
