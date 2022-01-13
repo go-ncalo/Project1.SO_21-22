@@ -46,7 +46,7 @@ int main() {
     assert(pthread_join(read4, NULL) == 0);
     
 
-    printf("Sucessful test\n");
+    printf("Successful test\n");
 
     return 0;
 }
