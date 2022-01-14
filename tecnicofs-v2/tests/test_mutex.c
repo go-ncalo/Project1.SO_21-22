@@ -50,8 +50,7 @@ void* read (void* args) {
     assert(fd != -1 );
 
     for (int i = 0; i < COUNT; i++) {
-        ssize_t result = tfs_read(fd, output, SIZE);
-        assert(result == SIZE);
+        assert(tfs_read(fd, output, SIZE) == SIZE);
         assert(memcmp(((args_struct*)args)->input, output, SIZE) == 0);
     }
 
