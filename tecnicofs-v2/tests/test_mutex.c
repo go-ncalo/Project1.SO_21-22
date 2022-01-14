@@ -29,10 +29,10 @@ int main() {
 
     assert(pthread_create(&write1,NULL, &write, &args) == 0);
     assert(pthread_create(&write2,NULL, &write, &args) == 0);
-    assert(pthread_create(&read1,NULL, &read, &args) == 0);
-    assert(pthread_create(&read2,NULL, &read, &args) == 0);
     assert(pthread_join(write1, NULL) == 0);
     assert(pthread_join(write2, NULL) == 0);
+    assert(pthread_create(&read1,NULL, &read, &args) == 0);
+    assert(pthread_create(&read2,NULL, &read, &args) == 0);
     assert(pthread_join(read1, NULL) == 0);
     assert(pthread_join(read2, NULL) == 0);
     
@@ -50,7 +50,8 @@ void* read (void* args) {
     assert(fd != -1 );
 
     for (int i = 0; i < COUNT; i++) {
-        assert(tfs_read(fd, output, SIZE) == SIZE);
+        ssize_t result = tfs_read(fd, output, SIZE);
+        assert(result == SIZE);
         assert(memcmp(((args_struct*)args)->input, output, SIZE) == 0);
     }
 
