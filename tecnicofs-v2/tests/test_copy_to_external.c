@@ -60,10 +60,10 @@ int main() {
 
     assert(pthread_create(&cpy1,NULL, &copy_to_external, &args1) == 0);
     assert(pthread_create(&cpy2,NULL, &copy_to_external, &args2) == 0);
-    assert(pthread_create(&cpy3,NULL, &copy_to_external, &args3) == 0);
-    assert(pthread_create(&cpy4,NULL, &copy_to_external, &args4) == 0);
     assert(pthread_join(cpy1, NULL) == 0);
     assert(pthread_join(cpy2, NULL) == 0);
+    assert(pthread_create(&cpy3,NULL, &copy_to_external, &args3) == 0);
+    assert(pthread_create(&cpy4,NULL, &copy_to_external, &args4) == 0);
     assert(pthread_join(cpy3, NULL) == 0);
     assert(pthread_join(cpy4, NULL) == 0);
 
